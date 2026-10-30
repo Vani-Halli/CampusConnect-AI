@@ -1,0 +1,1 @@
+"""CampusConnect AI backend package."""

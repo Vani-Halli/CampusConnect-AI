@@ -1,0 +1,285 @@
+{
+  "name": "CampusConnect BEC retrieval evaluation set",
+  "version": 1,
+  "queries": [
+    {
+      "query_id": "original-bec001",
+      "query_type": "original",
+      "query": "What is the full name and location of BEC?",
+      "expected_document_id": "BEC001",
+      "category": "Admissions"
+    },
+    {
+      "query_id": "original-bec002",
+      "query_type": "original",
+      "query": "When was Basaveshwar Engineering College established?",
+      "expected_document_id": "BEC002",
+      "category": "Admissions"
+    },
+    {
+      "query_id": "original-bec008",
+      "query_type": "original",
+      "query": "How long is the B.E. programme at BEC?",
+      "expected_document_id": "BEC008",
+      "category": "Courses"
+    },
+    {
+      "query_id": "original-bec009",
+      "query_type": "original",
+      "query": "Which B.E. disciplines are offered in the aided section?",
+      "expected_document_id": "BEC009",
+      "category": "Courses"
+    },
+    {
+      "query_id": "original-bec014",
+      "query_type": "original",
+      "query": "What are the B.E. fee components for 2026-27?",
+      "expected_document_id": "BEC014",
+      "category": "Fees"
+    },
+    {
+      "query_id": "original-bec032",
+      "query_type": "original",
+      "query": "What is the MBA government-quota fee stated on the supplied page?",
+      "expected_document_id": "BEC032",
+      "category": "Fees"
+    },
+    {
+      "query_id": "original-bec042",
+      "query_type": "original",
+      "query": "How many students were eligible for placement in the 2025 batch at BEC?",
+      "expected_document_id": "BEC042",
+      "category": "Placements"
+    },
+    {
+      "query_id": "original-bec043",
+      "query_type": "original",
+      "query": "How many students were placed in the 2025 batch at BEC?",
+      "expected_document_id": "BEC043",
+      "category": "Placements"
+    },
+    {
+      "query_id": "original-bec072",
+      "query_type": "original",
+      "query": "Does BEC provide hostel facilities for students?",
+      "expected_document_id": "BEC072",
+      "category": "Student Life"
+    },
+    {
+      "query_id": "original-bec075",
+      "query_type": "original",
+      "query": "Who is the Chief Warden of BEC hostels?",
+      "expected_document_id": "BEC075",
+      "category": "Student Life"
+    },
+    {
+      "query_id": "original-row101",
+      "query_type": "original",
+      "query": "What does the BEC Autonomous Examination Section do?",
+      "expected_document_id": "BEC-ROW-101",
+      "category": "Examinations"
+    },
+    {
+      "query_id": "original-row103",
+      "query_type": "original",
+      "query": "Where can I find the BEC SEE timetable?",
+      "expected_document_id": "BEC-ROW-103",
+      "category": "Examinations"
+    },
+    {
+      "query_id": "original-row106",
+      "query_type": "original",
+      "query": "Who can request academic document verification from BEC?",
+      "expected_document_id": "BEC-ROW-106",
+      "category": "Academic Verification"
+    },
+    {
+      "query_id": "original-row109",
+      "query_type": "original",
+      "query": "What is the fee for BEC academic document verification?",
+      "expected_document_id": "BEC-ROW-109",
+      "category": "Academic Verification"
+    },
+    {
+      "query_id": "original-row115",
+      "query_type": "original",
+      "query": "What is the parent trust of Basaveshwar Engineering College?",
+      "expected_document_id": "BEC-ROW-115",
+      "category": "Administration"
+    },
+    {
+      "query_id": "original-row118",
+      "query_type": "original",
+      "query": "Who is the Principal of Basaveshwar Engineering College, Bagalkote?",
+      "expected_document_id": "BEC-ROW-118",
+      "category": "Administration"
+    },
+    {
+      "query_id": "original-row153",
+      "query_type": "original",
+      "query": "What is the general contact information for BEC?",
+      "expected_document_id": "BEC-ROW-153",
+      "category": "College Contacts"
+    },
+    {
+      "query_id": "original-row165",
+      "query_type": "original",
+      "query": "How can I contact the BEC Controller of Examinations?",
+      "expected_document_id": "BEC-ROW-165",
+      "category": "College Contacts"
+    },
+    {
+      "query_id": "original-row154",
+      "query_type": "original",
+      "query": "Which scholarships are listed by Basaveshwar Engineering College?",
+      "expected_document_id": "BEC-ROW-154",
+      "category": "Scholarships"
+    },
+    {
+      "query_id": "original-row155",
+      "query_type": "original",
+      "query": "Where can students apply for Karnataka SC/ST scholarships at BEC?",
+      "expected_document_id": "BEC-ROW-155",
+      "category": "Scholarships"
+    },
+    {
+      "query_id": "original-row162",
+      "query_type": "original",
+      "query": "Who is the Chairman of the BEC SC/ST/BCM Cell for academic year 2025-2026?",
+      "expected_document_id": "BEC-ROW-162",
+      "category": "Student Support"
+    },
+    {
+      "query_id": "original-row163",
+      "query_type": "original",
+      "query": "How can I contact the BEC SC/ST/BCM Cell?",
+      "expected_document_id": "BEC-ROW-163",
+      "category": "Student Support"
+    },
+    {
+      "query_id": "paraphrase-bec001",
+      "query_type": "paraphrase",
+      "query": "What is BEC's full official name, and where is the college located?",
+      "expected_document_id": "BEC001",
+      "category": "Admissions"
+    },
+    {
+      "query_id": "paraphrase-bec008",
+      "query_type": "paraphrase",
+      "query": "How many years does the B.E. course take at BEC?",
+      "expected_document_id": "BEC008",
+      "category": "Courses"
+    },
+    {
+      "query_id": "paraphrase-bec014",
+      "query_type": "paraphrase",
+      "query": "Which components make up B.E. fees for 2026-27?",
+      "expected_document_id": "BEC014",
+      "category": "Fees"
+    },
+    {
+      "query_id": "paraphrase-bec043",
+      "query_type": "paraphrase",
+      "query": "For the 2025 batch, how many students got placed?",
+      "expected_document_id": "BEC043",
+      "category": "Placements"
+    },
+    {
+      "query_id": "paraphrase-bec072",
+      "query_type": "paraphrase",
+      "query": "Are student hostels available at BEC?",
+      "expected_document_id": "BEC072",
+      "category": "Student Life"
+    },
+    {
+      "query_id": "paraphrase-row101",
+      "query_type": "paraphrase",
+      "query": "What is the role of BEC's autonomous examination department?",
+      "expected_document_id": "BEC-ROW-101",
+      "category": "Examinations"
+    },
+    {
+      "query_id": "paraphrase-row106",
+      "query_type": "paraphrase",
+      "query": "Who is eligible to ask BEC to verify academic documents?",
+      "expected_document_id": "BEC-ROW-106",
+      "category": "Academic Verification"
+    },
+    {
+      "query_id": "paraphrase-row118",
+      "query_type": "paraphrase",
+      "query": "Who leads Basaveshwar Engineering College in Bagalkote?",
+      "expected_document_id": "BEC-ROW-118",
+      "category": "Administration"
+    },
+    {
+      "query_id": "paraphrase-row153",
+      "query_type": "paraphrase",
+      "query": "How can someone reach BEC for general enquiries?",
+      "expected_document_id": "BEC-ROW-153",
+      "category": "College Contacts"
+    },
+    {
+      "query_id": "paraphrase-row154",
+      "query_type": "paraphrase",
+      "query": "Which scholarships does BEC mention?",
+      "expected_document_id": "BEC-ROW-154",
+      "category": "Scholarships"
+    },
+    {
+      "query_id": "paraphrase-row163",
+      "query_type": "paraphrase",
+      "query": "What contact options are available for the BEC SC/ST/BCM Cell?",
+      "expected_document_id": "BEC-ROW-163",
+      "category": "Student Support"
+    },
+    {
+      "query_id": "unsupported-observatory",
+      "query_type": "unsupported",
+      "query": "Does BEC have a campus observatory that lends telescopes?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-aquarium",
+      "query_type": "unsupported",
+      "query": "What are the campus aquarium fish-feeding hours?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-telescope",
+      "query_type": "unsupported",
+      "query": "Where can I borrow a telescope from BEC?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-planetarium",
+      "query_type": "unsupported",
+      "query": "Can I reserve a planetarium ticket at BEC?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-observatory-hours",
+      "query_type": "unsupported",
+      "query": "What are the office hours for the campus observatory?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-drone",
+      "query_type": "unsupported",
+      "query": "Does BEC lend drones to students for weekend projects?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "unsupported-podcast",
+      "query_type": "unsupported",
+      "query": "Does BEC run a public podcast recording studio?",
+      "expected_no_result": true
+    },
+    {
+      "query_id": "empty-query",
+      "query_type": "empty",
+      "query": "",
+      "expected_no_result": true
+    }
+  ]
+}
