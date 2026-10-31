@@ -6,6 +6,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_ACADEMIC_DATASET_DIR = BASE_DIR / "backend" / "data" / "academic_retrieval"
 DEFAULT_BEC_DATASET_PATH = BACKEND_DIR / "data" / "bec_campusconnect_dataset.json"
+DEFAULT_DATABASE_PATH = BASE_DIR / "campusconnect.db"
 
 
 class Settings(BaseSettings):
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
     debug: bool = True
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
-    database_url: str = "sqlite:///./campusconnect.db"
+    database_path: Path = DEFAULT_DATABASE_PATH
     allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     upload_dir: str = "./uploads"
     max_upload_size_mb: int = 10

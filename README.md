@@ -188,7 +188,7 @@ The root `.env.example` contains backend settings. Important values include:
 | --- | --- |
 | `APP_ENV`, `DEBUG` | Backend environment and debug mode. |
 | `BACKEND_HOST`, `BACKEND_PORT` | Local server bind settings. |
-| `DATABASE_URL` | SQLite database URL used for feedback and analytics by default. |
+| `DATABASE_PATH` | SQLite file used for feedback, analytics, and document metadata/chunks. Defaults to `campusconnect.db` in the project root; set an absolute path for persistent hosting storage. |
 | `ALLOWED_ORIGINS` | Comma-separated browser origins allowed by CORS. |
 | `BEC_DATASET_PATH` | Dataset path, relative to the backend directory unless absolute. |
 | `ANSWER_TFIDF_MIN_SCORE`, `ANSWER_SEMANTIC_MIN_SCORE` | Answerability score thresholds. |
@@ -251,13 +251,58 @@ Set-Location backend
 
 Evaluation writes `backend\reports\retrieval_evaluation.md` and `.json`. Its output describes the loaded model state; semantic results are unavailable if the optional dependency/model cannot load.
 
+## Deploy the backend to Render
+
+The repository includes a root-level `render.yaml` Blueprint for a Python Web Service. In the Render Dashboard, choose **New → Blueprint**, select this GitHub repository, and review the service before creating it. The Blueprint uses the repository root as the service root so Render can read the root `.python-version`; its commands target the backend folder.
+
+Expected Render settings:
+
+| Setting | Value |
+| --- | --- |
+| Service type | Web Service |
+| Runtime | Python |
+| Root Directory | Leave blank (repository root) |
+| Python version | `3.11`, from the root `.python-version` file |
+| Build Command | `pip install -r backend/requirements.txt` |
+| Start Command | `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/api/health` |
+
+Render provides `PORT` at runtime. The Blueprint start command binds Uvicorn to that port; the Python module entry point also reads `PORT` and falls back to `BACKEND_PORT` for local runs.
+
+Set these service environment variables in Render:
+
+| Variable | Production value |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `DEBUG` | `false` |
+| `ALLOWED_ORIGINS` | The exact deployed Vercel origin, for example `https://<your-project>.vercel.app`; replace the placeholder. Do not enter `*`. For multiple approved origins, use a comma-separated list. |
+| `BEC_DATASET_PATH` | `data/bec_campusconnect_dataset.json` |
+| `LLM_PROVIDER` | `none` (no external LLM is required) |
+| `DATABASE_PATH` | Optional. Leave unset for the default ephemeral SQLite file, or set to `/var/data/campusconnect.db` only after attaching a persistent disk mounted at `/var/data`. |
+| `UPLOAD_DIR` | Optional. Leave unset for ephemeral uploads, or set to `/var/data/uploads` only when a persistent disk is mounted there. |
+| `ADMIN_API_KEY` | Optional. Only set a strong private value if protected PDF management is needed; do not put it in the frontend. |
+
+The BEC JSON is tracked in this repository and is loaded during backend startup. The health endpoint reports the loaded document and record counts; check `GET /api/health` after the first deploy to confirm 170 documents/records and zero invalid records. The semantic model may download or initialize on first use, which can increase startup/cold-start time.
+
+### Render storage and persistence
+
+Feedback and analytics, document metadata, and extracted PDF chunks are stored in SQLite. The SQLite file defaults to `campusconnect.db` at the project root, preserving the existing local path. Uploaded PDF bytes are written under `UPLOAD_DIR` (default `backend/uploads`). Render's service filesystem is ephemeral by default, so these changes can be lost when the service restarts or redeploys. The BEC FAQ JSON is part of the deploy, not runtime-written storage.
+
+For persistence, use a Render persistent disk (available on paid web services) and set `DATABASE_PATH=/var/data/campusconnect.db` and, if retaining uploaded PDFs, `UPLOAD_DIR=/var/data/uploads` with the disk mounted at `/var/data`. Alternatively, move application persistence to a managed database and object storage; that requires a separate storage implementation and is not configured by this project. A persistent disk is tied to one service instance and may constrain scaling. No disk or paid service is provisioned by this repository configuration.
+
+### CORS and frontend connection
+
+The backend reads `ALLOWED_ORIGINS` and enables only those origins in production; its localhost/private-network development regex is disabled when `APP_ENV=production`. Set the exact stable Vercel frontend origin after that deployment exists. Do not use wildcard origins. Configure the Vercel frontend's `VITE_API_BASE_URL` to the Render service origin (without an API path), then redeploy the frontend.
+
+This project configuration does not create a Render account/service or a Vercel deployment. Confirm service pricing, instance availability, and storage requirements in the Render Dashboard before provisioning.
+
 ## GitHub publication and deployment readiness
 
 The repository includes the active BEC dataset so the backend can run after checkout. The `.gitignore` excludes virtual environments, caches, local environment files, databases, Node dependencies/build output, uploaded files, generated legacy submission output, and unrelated datasets. It preserves `.env.example` files.
 
 Do not commit `.env`, `.env.local`, credentials, the local SQLite database, virtual environments, generated build/cache files, or unapproved data. Keep source code, tests, dependency lock/manifest files, configuration examples, documentation, and useful evaluation reports.
 
-The project is **not deployed**. Deployment preparation is not proof of a public website. Before deployment, configure exact CORS origins and the public frontend backend URL, and consider persistence for SQLite feedback/analytics and uploaded documents. No hosting account or public URL is configured here.
+The project is **not deployed**. Deployment preparation is not proof of a public website. Before deployment, set the exact CORS origin and frontend backend URL, and decide whether SQLite feedback/analytics and uploaded documents need persistent storage. No hosting account or public URL is configured here.
 
 ## Known limitations
 

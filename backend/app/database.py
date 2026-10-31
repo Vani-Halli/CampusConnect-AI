@@ -2,7 +2,12 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-DB_PATH = Path(__file__).resolve().parents[2] / "campusconnect.db"
+from app.core.config import BASE_DIR, settings
+
+DB_PATH = settings.database_path
+if not DB_PATH.is_absolute():
+    DB_PATH = (BASE_DIR / DB_PATH).resolve()
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_connection() -> sqlite3.Connection:

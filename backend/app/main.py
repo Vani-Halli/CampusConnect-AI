@@ -1030,4 +1030,9 @@ def root() -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host=settings.backend_host, port=settings.backend_port, reload=settings.debug)
+    uvicorn.run(
+        "app.main:app",
+        host=settings.backend_host,
+        port=int(os.environ.get("PORT", settings.backend_port)),
+        reload=settings.debug,
+    )
