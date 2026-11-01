@@ -1,327 +1,259 @@
 # CampusConnect AI
 
-**A student-query chatbot for Basaveshwar Engineering College (BEC), Bagalkote**
+**An AI-powered college FAQ chatbot that helps students access campus information through natural language queries.**
 
-CampusConnect AI is a React website and FastAPI service that help students ask questions about BEC. The backend searches the project's supplied FAQ records, applies relevance and answerability checks, and returns matching answers with source information where available. Students can also browse categories and the knowledge base, review retrieval evaluation results, and provide answer feedback.
+## Overview
 
-> **Dataset notice:** College information was supplied by the project owner and has not been independently verified. Confirm important or current details with BEC. Public redistribution and display permission for the dataset must be confirmed before publishing its contents or exposing the chatbot publicly.
+CampusConnect AI is a web-based chatbot developed to help students find information about Basaveshwar Engineering College (BEC), Bagalkote.
 
-## Problem statement
+Students can ask questions related to admissions, courses, fees, placements, facilities, examinations, and other college-related topics. The chatbot retrieves relevant answers from a structured FAQ dataset using information retrieval techniques.
 
-Students need a convenient way to find academic and campus information. FAQ information can be incomplete, outdated, or difficult to search. This project provides a searchable question-and-answer interface while making evidence gaps visible instead of intentionally inventing college facts.
+The project aims to make college information easier to access through a simple, interactive, and user-friendly interface.
 
-## Project objectives
+## Live Demo
 
-- Let students ask questions in natural language.
-- Find relevant information in the supplied BEC FAQ dataset.
-- Preserve and display source metadata and verification caveats.
-- Offer browsing, categories, feedback, and retrieval evaluation.
-- Use a safe fallback when the available evidence is insufficient.
+- **Frontend:** https://campus-connect-ai-six-rust.vercel.app
+- **Backend API:** https://campusconnect-ai-ehev.onrender.com
+- **API Documentation:** https://campusconnect-ai-ehev.onrender.com/docs
 
-## Features
+## Key Features
 
-- Chat interface with TF-IDF, semantic, and hybrid retrieval modes.
-- FAQ answerability checks and clarification/fallback responses.
-- Related FAQ suggestions, source links, and verification notes when provided.
-- Broad FAQ summaries and paginated record browsing.
-- Knowledge-base search and category browsing.
-- Feedback collection and analytics summary backed by SQLite.
-- Retrieval evaluation report view.
-- Optional protected PDF upload and indexing API; management requires a backend-only admin key.
-- Responsive React interface.
+- **Natural Language Queries:** Ask college-related questions in simple language.
+- **FAQ-Based Retrieval:** Retrieves relevant answers using TF-IDF and other supported retrieval methods.
+- **Answerability Checking:** Identifies unsupported or unrelated questions to reduce incorrect responses.
+- **Chat History:** Saves and restores previous conversations using browser local storage.
+- **Category-Based Information:** Organizes college FAQs into different categories.
+- **Responsive Interface:** Supports desktop and mobile screens.
+- **Feedback and Analytics:** Supports collecting user feedback and basic usage information.
 
-## Technologies
+## Screenshots
 
-| Area | Technologies |
-| --- | --- |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Lucide React |
-| Backend | Python 3.11, FastAPI, Pydantic, Uvicorn |
-| Retrieval | scikit-learn TF-IDF, optional Sentence Transformers, hybrid reciprocal-rank fusion |
-| Data and storage | JSON FAQ dataset, SQLite/SQLAlchemy, pandas, pypdf |
-| Tests | pytest, FastAPI TestClient/httpx |
+<img width="1342" height="626" alt="image" src="https://github.com/user-attachments/assets/805749f9-5d26-484c-bae2-d0cf1db48984" />
 
-The standard answer path uses retrieved records and does not require an external LLM. Optional LLM settings exist, but no external LLM API is required to run the application.
+## Technology Stack
 
-## System architecture
+| Component | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Backend | Python, FastAPI |
+| Information Retrieval | Scikit-learn, TF-IDF |
+| Semantic Retrieval | Sentence Transformers (optional) |
+| Database | SQLite |
+| Data Format | JSON |
+| Deployment | Vercel, Render |
+| Development Tools | VS Code, Git, GitHub |
+
+## System Architecture
 
 ```text
-Student browser
-    │ React / TypeScript / Vite
-    │ VITE_API_BASE_URL
-    ▼
-FastAPI backend
-    ├── Loads the project-provided BEC JSON corpus
-    ├── Retrieves records with TF-IDF, semantic, or hybrid search
-    ├── Checks relevance and topical answerability
-    ├── Returns saved FAQ answers, sources, or a safe fallback
-    └── Stores feedback and analytics in SQLite
+           Student
+              |
+              v
+       React Frontend
+              |
+              v
+         FastAPI Backend
+              |
+              v
+       FAQ Retrieval System
+              |
+       +------+------+
+       |             |
+       v             v
+   TF-IDF       Answerability
+   Retrieval       Check
+       |             |
+       +------+------+
+              |
+              v
+       Relevant Answer
+              |
+              v
+        Student Interface
 ```
 
-The frontend sends chat requests to `POST /api/chat`. Retrieval scores are ranking values, not probabilities or guarantees that an answer is correct. The backend's answerability checks also look at topical evidence. When the evidence does not meet the configured requirements, the API returns a fallback instead of an FAQ answer.
+## How It Works
 
-### Retrieval methods
+1. The student enters a question through the chatbot interface.
+2. The frontend sends the question to the FastAPI backend.
+3. The backend processes the question and searches the structured FAQ dataset.
+4. The retrieval system identifies relevant FAQ records.
+5. Answerability checks help determine whether the retrieved information is sufficient to answer the question.
+6. The chatbot displays the retrieved answer or requests clarification when necessary.
 
-- **TF-IDF:** A keyword-based baseline using term weighting and cosine similarity. It is relatively lightweight and does not need a semantic model download.
-- **Semantic:** Uses a Sentence Transformers model to compare query/document embeddings. It can better match paraphrases, but the model must be available to the backend and may need to download on first use.
-- **Hybrid:** Combines the TF-IDF and semantic rankings using reciprocal rank fusion. The methods' raw scores are on different scales, so the system fuses ranks rather than treating those scores as directly comparable.
+## Dataset
 
-If semantic retrieval cannot be initialized or fails, the retrieval engine can use TF-IDF candidates as a fallback. Model download and cold-start behavior depend on the deployment environment.
+The project uses a structured JSON dataset containing **170 FAQ records across 11 categories**.
 
-## Project structure
+Each record contains fields such as:
+
+- Question
+- Answer
+- Category
+- Institution
+- Source URL
+- Academic year
+- Verification notes
+
+The dataset is maintained in:
+
+`backend/data/bec_campusconnect_dataset.json`
+
+The information is intended for academic project use. Some entries may be incomplete or require verification against official college sources.
+
+## Retrieval Evaluation
+
+The retrieval system was evaluated using a manually prepared benchmark of 33 answerable queries and 8 unanswerable queries.
+
+| Metric | TF-IDF | Semantic | Hybrid |
+|---|---:|---:|---:|
+| Top-1 Accuracy | 87.9% | 87.9% | 93.9% |
+| Top-3 Accuracy | 93.9% | 97.0% | 97.0% |
+| Mean Reciprocal Rank (MRR) | 90.4% | 92.4% | 95.5% |
+| Rejection Accuracy | 100% | 100% | 100% |
+
+**Note:** These results are based on a small manually prepared evaluation dataset and should not be considered a guarantee of real-world performance. The deployed free Render service currently uses TF-IDF fallback when the semantic model is unavailable.
+
+## Installation and Setup
+
+### Prerequisites
+
+- Python 3.11
+- Node.js and npm
+- Git
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Vani-Halli/CampusConnect-AI.git
+cd CampusConnect-AI
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+```
+
+Activate the virtual environment.
+
+**Windows:**
+
+```bash
+venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the backend:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Backend runs at:
+
+`http://127.0.0.1:8000`
+
+### 3. Frontend Setup
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file in the frontend directory:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed in the terminal.
+
+## API Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/health` | Backend health check |
+| POST | `/api/chat` | Submit a chatbot question |
+| GET | `/api/categories` | Retrieve FAQ categories |
+| GET | `/api/category-counts` | Retrieve category counts |
+| GET | `/api/knowledge` | Access knowledge information |
+| POST | `/api/feedback` | Submit user feedback |
+
+Interactive API documentation is available at `/docs`.
+
+## Testing
+
+The backend test suite contains **106 passing tests**.
+
+Testing covers:
+
+- FAQ dataset loading and validation.
+- Question retrieval and answerability checks.
+- Chat API functionality.
+- Feedback and analytics functionality.
+- Error handling and application behavior.
+
+## Limitations
+
+1. **Dataset Coverage:** The chatbot can answer only questions covered by the available FAQ dataset.
+2. **Information Verification:** Some college information may be incomplete, outdated, or require official verification.
+3. **Retrieval Accuracy:** Similar or ambiguous questions may sometimes return less relevant answers.
+4. **Chat History:** Conversation history is stored locally in the browser and is not synchronized across devices.
+5. **Free Hosting Constraints:** The backend may take time to respond after inactivity, and temporary server storage may not retain feedback or uploaded data after restarts.
+
+## Future Improvements
+
+1. **Dataset Expansion:** Add more verified FAQs covering additional student queries.
+2. **Improved Retrieval:** Improve retrieval accuracy using larger datasets and more diverse evaluation queries.
+3. **Regular Data Updates:** Introduce a process to keep college information accurate and up to date.
+4. **Cloud-Based Chat History:** Add optional student accounts and synchronized chat history across devices.
+5. **Admin Dashboard:** Provide an authorized interface to manage and update FAQ records.
+
+## Project Structure
 
 ```text
 CampusConnect-AI/
+│
 ├── backend/
 │   ├── app/
-│   │   ├── core/config.py                # Backend settings and paths
-│   │   ├── services/                     # Data loading, retrieval, answerability
-│   │   ├── data/                          # Local-only legacy demo data (not published)
-│   │   ├── database.py                   # SQLite persistence
-│   │   └── main.py                       # FastAPI app and API routes
 │   ├── data/
-│   │   ├── bec_campusconnect_dataset.json # Required BEC FAQ corpus, included in repository
-│   │   └── retrieval_evaluation_queries.json
-│   ├── reports/                          # Saved evaluation and project reports
-│   ├── scripts/                          # Evaluation and data utilities
-│   ├── tests/                            # Backend automated tests
+│   │   └── bec_campusconnect_dataset.json
+│   ├── tests/
 │   └── requirements.txt
+│
 ├── frontend/
 │   ├── src/
-│   │   ├── api.ts                        # Typed backend client
-│   │   ├── App.tsx                       # Chat and other views
-│   │   └── styles.css
-│   ├── .env.example                      # Public frontend URL placeholder
+│   ├── public/
 │   ├── package.json
 │   └── vite.config.ts
-├── docs/BEGINNER_GUIDE.md
-├── .env.example                          # Backend configuration example
-├── .gitignore
-├── .python-version
+│
 └── README.md
 ```
 
-The BEC JSON file is included because it is required for the chatbot to start and answer questions. Per the project owner's confirmation, the questions and answers are written in their own words based on information collected from the college's official website; the dataset's source URLs and verification notes are preserved. The local-only legacy demo FAQ file, unrelated downloaded datasets, and its downloader are excluded from Git.
+## Author
 
-The backend does not silently start with an empty BEC corpus if that file is missing: startup raises a `FileNotFoundError` that identifies the dataset path. If you obtain an updated authorized copy, place it at `backend\data\bec_campusconnect_dataset.json`, or set `BEC_DATASET_PATH` to its path before starting the backend.
+**Vani Nagappa Halli**
 
-## Dataset and limitations
+Computer Science and Engineering
 
-The active BEC FAQ corpus is `backend/data/bec_campusconnect_dataset.json`. It contains 170 records, including questions, answers, categories, and source metadata where supplied. The loader preserves original record fields and generates stable local IDs for records that lack IDs.
+- GitHub: https://github.com/Vani-Halli
+- Portfolio: https://vani-halli.github.io/profile/
 
-- The data was supplied by the project owner, who confirms the question and answer wording is their own paraphrase of material collected from the college's official website. The content is **not independently fact-checked**.
-- Source URLs and verification notes are retained, but a source link alone does not establish that information is current or authoritative for a student's decision.
-- The dataset includes publicly listed college contact details. Recheck contact information and appropriateness before reusing it outside this project.
-- Exact B.E. fee amounts are not available in the supplied records.
-- A complete step-by-step B.E. admission procedure is not available.
-- Internship information is not supplied.
-- Other details can be incomplete, stale, or contradictory.
-- FAQ-record counts are not counts of real-world courses, people, offers, or services.
-- Students should confirm important, time-sensitive, or conflicting information with the college.
+---
 
-The dataset is included in this repository at the project owner's direction. This project review found no credentials, government-ID-like values, or unusually long answer passages; it is not a legal review or independent verification of every source. Students should confirm important, current information directly with the college.
-
-## Evaluation methodology and results
-
-The evaluation script uses the production retrieval engine and configured thresholds against a manually prepared benchmark of **33 answerable queries and 8 rejection queries**. The report measures Top-1, Top-3, mean reciprocal rank (MRR), answerable acceptance, and rejection accuracy.
-
-Latest saved benchmark results:
-
-| Mode | Top-1 before → after answerability | Top-3 after | MRR after | Rejection accuracy after |
-| --- | ---: | ---: | ---: | ---: |
-| TF-IDF | 87.9% → 87.9% | 93.9% | 90.4% | 100.0% |
-| Semantic | 72.7% → 87.9% | 97.0% | 92.4% | 100.0% |
-| Hybrid | 87.9% → **93.9%** | 97.0% | 95.5% | **100.0%** |
-
-These are regression measurements on a small, manually authored benchmark, not a representative sample of student questions and not a guarantee of real-world accuracy. The answerable examples include questions close to FAQ wording, and the rejection sample is small. Results should not be read as a probability that any individual response is correct. See `backend/reports/retrieval_evaluation.md` for the detailed report.
-
-The latest recorded complete backend test run passed **106 tests**. It emitted two dependency deprecation warnings (Starlette and Pydantic); these were warnings, not test failures.
-
-## Requirements
-
-- Windows PowerShell for the commands below (equivalent commands can be used on other systems).
-- Python 3.11, as declared in `.python-version`.
-- Node.js and npm.
-- The included BEC dataset file at the configured path.
-- Internet access may be needed to install dependencies and retrieve the optional semantic model.
-
-## Backend setup
-
-From the project root:
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r backend\requirements.txt
-Copy-Item .env.example .env
-```
-
-If PowerShell prevents environment activation, run the virtual environment's Python directly as shown below. The required `backend\data\bec_campusconnect_dataset.json` is included in the repository checkout.
-
-Start the backend from a PowerShell terminal at the project root:
-
-```powershell
-Set-Location backend
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-The API health check is `http://127.0.0.1:8000/api/health`. Interactive API documentation is at `http://127.0.0.1:8000/docs`.
-
-## Frontend setup and local run
-
-In a second PowerShell terminal at the project root:
-
-```powershell
-Copy-Item frontend\.env.example frontend\.env.local
-Set-Location frontend
-npm.cmd ci
-npm.cmd run dev
-```
-
-Open the local URL printed by Vite (normally `http://localhost:5173`). The frontend reads the backend origin from `VITE_API_BASE_URL`; its example points to `http://localhost:8000`.
-
-### Environment variables
-
-The root `.env.example` contains backend settings. Important values include:
-
-| Variable | Purpose |
-| --- | --- |
-| `APP_ENV`, `DEBUG` | Backend environment and debug mode. |
-| `BACKEND_HOST`, `BACKEND_PORT` | Local server bind settings. |
-| `DATABASE_PATH` | SQLite file used for feedback, analytics, and document metadata/chunks. Defaults to `campusconnect.db` in the project root; set an absolute path for persistent hosting storage. |
-| `ALLOWED_ORIGINS` | Comma-separated browser origins allowed by CORS. |
-| `BEC_DATASET_PATH` | Dataset path, relative to the backend directory unless absolute. |
-| `ANSWER_TFIDF_MIN_SCORE`, `ANSWER_SEMANTIC_MIN_SCORE` | Answerability score thresholds. |
-| `ADMIN_API_KEY` | Optional backend-only key for protected document routes. |
-| `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_BASE_URL` | Optional LLM integration settings. |
-
-The frontend `.env.example` contains `VITE_API_BASE_URL`. Vite variables are delivered to the browser: never put credentials, API keys, or other secrets in frontend variables. Set `VITE_API_BASE_URL` to the deployed backend origin when one exists. Configure backend `ALLOWED_ORIGINS` with the exact deployed frontend origin; do not use a production wildcard.
-
-## API endpoints
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/health` | Health and corpus status |
-| `GET` | `/api/faqs` | Loaded FAQ records |
-| `GET` | `/api/categories` | Available categories |
-| `GET` | `/api/category-counts` | FAQ record counts by category |
-| `GET` | `/api/knowledge` | Search and browse knowledge records |
-| `GET` | `/api/evaluation` | Read the saved compatible evaluation report |
-| `POST` | `/api/chat` | Retrieve an answer or fallback |
-| `POST` | `/api/feedback` | Save answer feedback |
-| `GET` | `/api/analytics/summary` | Feedback/query analytics summary |
-| `GET` | `/api/documents` | List uploaded documents (protected) |
-| `POST` | `/api/documents/upload` | Upload and index a PDF (protected) |
-| `DELETE` | `/api/documents/{document_id}` | Delete an uploaded PDF (protected) |
-
-Chat example:
-
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:8000/api/chat `
-  -ContentType 'application/json' `
-  -Body '{"question":"How long is the B.E. programme at BEC?","mode":"tfidf"}'
-```
-
-The response includes the answer, status, retrieved document IDs, related questions, and source metadata when available. Document-management endpoints require `X-Admin-Key` matching the backend's `ADMIN_API_KEY`. Do not put that key in the frontend.
-
-## Testing and evaluation
-
-Run the full backend suite from the project root:
-
-```powershell
-Set-Location backend
-..\.venv\Scripts\python.exe -m pytest -q
-```
-
-Build the frontend (includes TypeScript project checks) from the project root:
-
-```powershell
-Set-Location frontend
-npm.cmd run build
-```
-
-Refresh the retrieval evaluation report from the project root:
-
-```powershell
-Set-Location backend
-..\.venv\Scripts\python.exe -m scripts.evaluate_retrieval
-```
-
-Evaluation writes `backend\reports\retrieval_evaluation.md` and `.json`. Its output describes the loaded model state; semantic results are unavailable if the optional dependency/model cannot load.
-
-## Deploy the backend to Render
-
-The repository includes a root-level `render.yaml` Blueprint for a Python Web Service. In the Render Dashboard, choose **New → Blueprint**, select this GitHub repository, and review the service before creating it. The Blueprint uses the repository root as the service root so Render can read the root `.python-version`; its commands target the backend folder.
-
-Expected Render settings:
-
-| Setting | Value |
-| --- | --- |
-| Service type | Web Service |
-| Runtime | Python |
-| Root Directory | Leave blank (repository root) |
-| Python version | `3.11`, from the root `.python-version` file |
-| Build Command | `pip install -r backend/requirements.txt` |
-| Start Command | `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Health Check Path | `/api/health` |
-
-Render provides `PORT` at runtime. The Blueprint start command binds Uvicorn to that port; the Python module entry point also reads `PORT` and falls back to `BACKEND_PORT` for local runs.
-
-Set these service environment variables in Render:
-
-| Variable | Production value |
-| --- | --- |
-| `APP_ENV` | `production` |
-| `DEBUG` | `false` |
-| `ALLOWED_ORIGINS` | The exact deployed Vercel origin, for example `https://<your-project>.vercel.app`; replace the placeholder. Do not enter `*`. For multiple approved origins, use a comma-separated list. |
-| `BEC_DATASET_PATH` | `data/bec_campusconnect_dataset.json` |
-| `LLM_PROVIDER` | `none` (no external LLM is required) |
-| `DATABASE_PATH` | Optional. Leave unset for the default ephemeral SQLite file, or set to `/var/data/campusconnect.db` only after attaching a persistent disk mounted at `/var/data`. |
-| `UPLOAD_DIR` | Optional. Leave unset for ephemeral uploads, or set to `/var/data/uploads` only when a persistent disk is mounted there. |
-| `ADMIN_API_KEY` | Optional. Only set a strong private value if protected PDF management is needed; do not put it in the frontend. |
-
-The BEC JSON is tracked in this repository and is loaded during backend startup. The health endpoint reports the loaded document and record counts; check `GET /api/health` after the first deploy to confirm 170 documents/records and zero invalid records. The semantic model may download or initialize on first use, which can increase startup/cold-start time.
-
-### Render storage and persistence
-
-Feedback and analytics, document metadata, and extracted PDF chunks are stored in SQLite. The SQLite file defaults to `campusconnect.db` at the project root, preserving the existing local path. Uploaded PDF bytes are written under `UPLOAD_DIR` (default `backend/uploads`). Render's service filesystem is ephemeral by default, so these changes can be lost when the service restarts or redeploys. The BEC FAQ JSON is part of the deploy, not runtime-written storage.
-
-For persistence, use a Render persistent disk (available on paid web services) and set `DATABASE_PATH=/var/data/campusconnect.db` and, if retaining uploaded PDFs, `UPLOAD_DIR=/var/data/uploads` with the disk mounted at `/var/data`. Alternatively, move application persistence to a managed database and object storage; that requires a separate storage implementation and is not configured by this project. A persistent disk is tied to one service instance and may constrain scaling. No disk or paid service is provisioned by this repository configuration.
-
-### CORS and frontend connection
-
-The backend reads `ALLOWED_ORIGINS` and enables only those origins in production; its localhost/private-network development regex is disabled when `APP_ENV=production`. Set the exact stable Vercel frontend origin after that deployment exists. Do not use wildcard origins. Configure the Vercel frontend's `VITE_API_BASE_URL` to the Render service origin (without an API path), then redeploy the frontend.
-
-This project configuration does not create a Render account/service or a Vercel deployment. Confirm service pricing, instance availability, and storage requirements in the Render Dashboard before provisioning.
-
-## GitHub publication and deployment readiness
-
-The repository includes the active BEC dataset so the backend can run after checkout. The `.gitignore` excludes virtual environments, caches, local environment files, databases, Node dependencies/build output, uploaded files, generated legacy submission output, and unrelated datasets. It preserves `.env.example` files.
-
-Do not commit `.env`, `.env.local`, credentials, the local SQLite database, virtual environments, generated build/cache files, or unapproved data. Keep source code, tests, dependency lock/manifest files, configuration examples, documentation, and useful evaluation reports.
-
-The project is **not deployed**. Deployment preparation is not proof of a public website. Before deployment, set the exact CORS origin and frontend backend URL, and decide whether SQLite feedback/analytics and uploaded documents need persistent storage. No hosting account or public URL is configured here.
-
-## Known limitations
-
-- The FAQ dataset is small, incomplete, unverified, and may be outdated or contradictory.
-- Exact B.E. fees, a full B.E. admission process, and internship details are missing.
-- Some source or verification metadata may be absent.
-- Similarity and evaluation scores are not confidence probabilities.
-- Semantic model downloads can increase startup time or fail; TF-IDF fallback may be used.
-- SQLite and uploaded file persistence depend on the hosting filesystem.
-- Optional LLM settings are not required for the standard retrieval answer path.
-
-## Future improvements
-
-- Independently verify FAQ records with BEC and update source references as official pages change.
-- Expand the benchmark with representative, independently labeled student questions.
-- Add persistent production storage if feedback or uploaded documents must survive restarts.
-- Monitor retrieval failures and user feedback, then refine only with verified data and regression tests.
-- Deploy after reviewing secrets, dataset permissions, environment settings, CORS, and storage requirements.
-
-## Acknowledgements
-
-The BEC FAQ records were supplied by the project owner. No independent dataset license or third-party BEC data attribution is claimed. The application uses the open-source libraries listed above; consult their project licenses when redistributing the software.
+*Developed as an academic minor project to make college information more accessible through AI-based information retrieval.*
