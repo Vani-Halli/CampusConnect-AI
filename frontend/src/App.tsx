@@ -11,8 +11,10 @@ import {
   Clock3,
   ExternalLink,
   GraduationCap,
+  History,
   Menu,
   MessageCircle,
+  Plus,
   Search,
   Send,
   Sparkles,
@@ -20,10 +22,10 @@ import {
   X,
 } from 'lucide-react';
 import {
-  ApiRequestError,
   fetchJson,
   sendChatRequest,
   type ChatResult,
+  type CollectionRecord,
   type EvaluationResult,
   type Source,
 } from './api';
@@ -36,6 +38,14 @@ type Message = {
   question?: string;
   result?: ChatResult;
   timestamp: number;
+};
+
+type Conversation = {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
 };
 
 type KnowledgeRecord = {
@@ -57,6 +67,8 @@ type KnowledgeResponse = {
 type View = 'chat' | 'knowledge' | 'categories' | 'evaluation' | 'about';
 
 const PAGE_SIZE = 12;
+const CHAT_HISTORY_KEY = 'campusconnect-ai-chat-history-v1';
+const WELCOME_MESSAGE = 'Hello! Ask me about Basaveshwar Engineering College (BEC), Bagalkote. Answers are based on the current BEC knowledge base and have not been independently verified.';
 const SUGGESTED_QUESTIONS = [
   'What courses are offered?',
   'What are the admission requirements?',
@@ -102,19 +114,173 @@ function displayValue(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-function App() {
-  const [messages, setMessages] = useState<Message[]>([{
+function createWelcomeMessage(): Message {
+  return {
     id: 0,
     role: 'assistant',
-    text: 'Hello! Ask me about Basaveshwar Engineering College (BEC), Bagalkote. Answers are based on the current BEC knowledge base and have not been independently verified.',
+    text: WELCOME_MESSAGE,
     timestamp: Date.now(),
-  }]);
+  };
+}
+
+function createConversationId(): string {
+  try {
+    return window.crypto.randomUUID();
+  } catch {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isTimestamp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && !Number.isNaN(new Date(value).getTime());
+}
+
+function isStoredSource(value: unknown): value is Source {
+  if (!isObject(value)) return false;
+  const stringFields = [
+    'title',
+    'matched_question',
+    'url',
+    'verification_status',
+    'verification_note',
+    'source_page_label',
+    'category',
+    'document_id',
+    'source_file',
+  ];
+  return stringFields.every((field) => value[field] === undefined
+      || value[field] === null
+      || typeof value[field] === 'string')
+    && (value.page === undefined || value.page === null || typeof value.page === 'number');
+}
+
+function isStoredCollectionRecord(value: unknown): value is CollectionRecord {
+  return isObject(value)
+    && typeof value.document_id === 'string'
+    && typeof value.category === 'string'
+    && typeof value.title === 'string'
+    && typeof value.source_file === 'string'
+    && typeof value.answer === 'string'
+    && isObject(value.original_record);
+}
+
+function isStoredChatResult(value: unknown): value is ChatResult {
+  return isObject(value)
+    && typeof value.answer === 'string'
+    && Array.isArray(value.sources)
+    && value.sources.every(isStoredSource)
+    && Array.isArray(value.records)
+    && value.records.every(isStoredCollectionRecord)
+    && typeof value.total === 'number'
+    && typeof value.page === 'number'
+    && typeof value.page_size === 'number'
+    && typeof value.has_more === 'boolean'
+    && typeof value.intent === 'string'
+    && typeof value.status === 'string'
+    && typeof value.query === 'string'
+    && Array.isArray(value.retrieved_document_ids)
+    && value.retrieved_document_ids.every((id) => typeof id === 'string')
+    && (value.category === undefined || value.category === null || typeof value.category === 'string')
+    && typeof value.retrieval_method === 'string'
+    && (value.score === undefined || value.score === null || typeof value.score === 'number')
+    && Array.isArray(value.follow_up_questions)
+    && value.follow_up_questions.every((question) => typeof question === 'string')
+    && typeof value.mode_label === 'string'
+    && typeof value.generation_status === 'string';
+}
+
+function isStoredMessage(value: unknown): value is Message {
+  if (!isObject(value)
+    || typeof value.id !== 'number'
+    || !Number.isFinite(value.id)
+    || (value.role !== 'assistant' && value.role !== 'user')
+    || typeof value.text !== 'string'
+    || !isTimestamp(value.timestamp)) {
+    return false;
+  }
+
+  if (value.sources !== undefined
+    && (!Array.isArray(value.sources) || !value.sources.every(isStoredSource))) {
+    return false;
+  }
+  if (value.question !== undefined && typeof value.question !== 'string') return false;
+  if (value.result !== undefined && !isStoredChatResult(value.result)) return false;
+  return true;
+}
+
+function loadConversations(): Conversation[] {
+  try {
+    const stored = window.localStorage.getItem(CHAT_HISTORY_KEY);
+    if (!stored) return [];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((item): item is Conversation => {
+      if (!isObject(item)
+        || typeof item.id !== 'string'
+        || typeof item.title !== 'string'
+        || !Array.isArray(item.messages)
+        || !item.messages.every(isStoredMessage)
+        || !isTimestamp(item.createdAt)
+        || !isTimestamp(item.updatedAt)) {
+        return false;
+      }
+      return item.messages.some((message) => message.role === 'user' && message.text.trim().length > 0);
+    }).sort((left, right) => right.updatedAt - left.updatedAt);
+  } catch {
+    return [];
+  }
+}
+
+function conversationTitle(question: string): string {
+  return question.trim() || 'New conversation';
+}
+
+function sortConversations(items: Conversation[]): Conversation[] {
+  return [...items].sort((left, right) => right.updatedAt - left.updatedAt);
+}
+
+function buildConversation(
+  id: string,
+  messages: Message[],
+  existing?: Conversation,
+): Conversation | null {
+  const firstQuestion = messages.find((message) => message.role === 'user' && message.text.trim());
+  if (!firstQuestion) return null;
+  return {
+    id,
+    title: conversationTitle(firstQuestion.text),
+    messages,
+    createdAt: existing?.createdAt ?? firstQuestion.timestamp,
+    updatedAt: Date.now(),
+  };
+}
+
+function upsertConversation(items: Conversation[], conversation: Conversation): Conversation[] {
+  return sortConversations([
+    ...items.filter((item) => item.id !== conversation.id),
+    conversation,
+  ]);
+}
+
+function App() {
+  const [conversations, setConversations] = useState<Conversation[]>(loadConversations);
+  const [activeConversationId, setActiveConversationId] = useState(
+    () => conversations[0]?.id ?? createConversationId(),
+  );
+  const [messages, setMessages] = useState<Message[]>(
+    () => conversations[0]?.messages ?? [createWelcomeMessage()],
+  );
+  const [historyStorageError, setHistoryStorageError] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [knowledge, setKnowledge] = useState<KnowledgeResponse>({
     items: [], total: 0, page: 1, page_size: PAGE_SIZE, has_more: false,
   });
-  const [health, setHealth] = useState<{ status: string; corpus_documents: number; semantic_model_loaded: boolean; semantic_model_error: string | null; mode: string } | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [evaluationLoading, setEvaluationLoading] = useState(false);
   const [activeView, setActiveView] = useState<View>('chat');
@@ -130,7 +296,6 @@ function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<number, boolean>>({});
-  const [backendStatus, setBackendStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -138,20 +303,32 @@ function App() {
   }, [messages, loading]);
 
   useEffect(() => {
+    const existing = conversations.find((conversation) => conversation.id === activeConversationId);
+    const updated = buildConversation(activeConversationId, messages, existing);
+    if (updated) setConversations((current) => upsertConversation(current, updated));
+  }, [activeConversationId, messages]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
+      setHistoryStorageError('');
+    } catch {
+      setHistoryStorageError('Chat history could not be saved in this browser.');
+    }
+  }, [conversations]);
+
+  useEffect(() => {
     let active = true;
     Promise.all([
       fetchJson<{ status: string; corpus_documents: number; semantic_model_loaded: boolean; semantic_model_error: string | null; mode: string }>('/api/health'),
       fetchJson<string[]>('/api/categories'),
       fetchJson<Record<string, number>>('/api/category-counts'),
-    ]).then(([currentHealth, categoryList, counts]) => {
+    ]).then(([, categoryList, counts]) => {
       if (!active) return;
-      setHealth(currentHealth);
-      setBackendStatus(currentHealth.status === 'ok' ? 'online' : 'offline');
       setCategories(categoryList);
       setCategoryCounts(counts);
     }).catch(() => {
       if (active) {
-        setBackendStatus('offline');
         setError('The backend is unavailable. Start the API to load the BEC knowledge base.');
       }
     });
@@ -212,7 +389,6 @@ function App() {
           ? []
           : messages.filter((message) => message.role === 'user').slice(-1).map((message) => message.text),
       });
-      setBackendStatus('online');
       if (updateMessageId) {
         setMessages((current) => current.map((message) => message.id === updateMessageId
           ? { ...message, text: result.answer, sources: result.sources, result }
@@ -229,11 +405,6 @@ function App() {
         }]);
       }
     } catch (reason) {
-      setBackendStatus(
-        reason instanceof ApiRequestError && (reason.kind === 'http' || reason.kind === 'response')
-          ? 'online'
-          : 'offline',
-      );
       setError(reason instanceof Error ? reason.message : 'The assistant could not answer this request.');
     } finally {
       setLoading(false);
@@ -282,15 +453,51 @@ function App() {
     }
   }
 
-  function clearChat() {
-    setMessages([{
-      id: Date.now(),
-      role: 'assistant',
-      text: 'Hello! Ask me about Basaveshwar Engineering College (BEC), Bagalkote. Answers are based on the current BEC knowledge base and have not been independently verified.',
-      timestamp: Date.now(),
-    }]);
+  function persistCurrentConversation() {
+    const existing = conversations.find((conversation) => conversation.id === activeConversationId);
+    const updated = buildConversation(activeConversationId, messages, existing);
+    if (!updated) return;
+
+    const next = upsertConversation(conversations, updated);
+    setConversations(next);
+    try {
+      window.localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(next));
+      setHistoryStorageError('');
+    } catch {
+      setHistoryStorageError('Chat history could not be saved in this browser.');
+    }
+  }
+
+  function startNewChat() {
+    if (loading) return;
+    persistCurrentConversation();
+    setActiveConversationId(createConversationId());
+    setMessages([createWelcomeMessage()]);
     setError('');
     setFeedbackSent({});
+  }
+
+  function openConversation(conversation: Conversation) {
+    if (loading) return;
+    persistCurrentConversation();
+    setActiveConversationId(conversation.id);
+    setMessages(conversation.messages);
+    setFeedbackSent({});
+    setError('');
+    setActiveView('chat');
+    setNavOpen(false);
+  }
+
+  function deleteConversation(conversation: Conversation) {
+    if (loading || !window.confirm(`Delete "${conversation.title}" from chat history?`)) return;
+    const remaining = conversations.filter((item) => item.id !== conversation.id);
+    setConversations(remaining);
+    if (conversation.id === activeConversationId) {
+      setActiveConversationId(createConversationId());
+      setMessages([createWelcomeMessage()]);
+      setFeedbackSent({});
+      setError('');
+    }
   }
 
   function openCategory(category: string) {
@@ -313,15 +520,6 @@ function App() {
     setKnowledgeQuery(knowledgeInput.trim());
   }
 
-  const statusText = backendStatus === 'connecting'
-    ? 'Connecting to backend'
-    : backendStatus === 'offline'
-      ? 'Backend unavailable'
-      : health?.corpus_documents === 0
-        ? 'Dataset unavailable'
-      : health?.semantic_model_loaded
-        ? 'Backend connected · semantic ready'
-        : 'Backend connected · TF-IDF available';
   const activeTitle: Record<View, string> = {
     chat: 'Ask Campus AI',
     knowledge: 'Knowledge Base',
@@ -354,10 +552,42 @@ function App() {
         <button className={`nav-item ${activeView === 'about' ? 'nav-item-active' : ''}`} onClick={() => selectView('about')} type="button">
           <Sparkles size={17} /><span>About Project</span>
         </button>
+        <section className="history-section" aria-label="Chat History">
+          <div className="history-heading"><History size={16} /><span>Chat History</span></div>
+          {conversations.length > 0 ? (
+            <div className="history-list">
+              {conversations.map((conversation) => (
+                <div className={`history-item ${conversation.id === activeConversationId ? 'history-item-active' : ''}`} key={conversation.id}>
+                  <button
+                    className="history-open"
+                    aria-current={conversation.id === activeConversationId ? 'page' : undefined}
+                    disabled={loading}
+                    onClick={() => openConversation(conversation)}
+                    title={conversation.title}
+                    type="button"
+                  >
+                    <span className="history-title">{conversation.title}</span>
+                    <time dateTime={new Date(conversation.updatedAt).toISOString()}>
+                      {new Date(conversation.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    </time>
+                  </button>
+                  <button
+                    aria-label={`Delete conversation: ${conversation.title}`}
+                    className="history-delete"
+                    disabled={loading}
+                    onClick={() => deleteConversation(conversation)}
+                    title="Delete conversation"
+                    type="button"
+                  ><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="history-empty">Your conversations will appear here.</p>
+          )}
+          {historyStorageError && <p className="history-storage-error" role="status">{historyStorageError}</p>}
+        </section>
         <div className="sidebar-bottom">
-          <div className={`connection ${backendStatus === 'online' ? 'connection-online' : backendStatus === 'offline' ? 'connection-offline' : ''}`}>
-            <span className="connection-dot" />{backendStatus === 'online' ? 'API connected' : backendStatus === 'offline' ? 'API unavailable' : 'Connecting to API'}
-          </div>
           <div className="sidebar-caption">Student support, made easier.</div>
         </div>
       </aside>
@@ -371,13 +601,9 @@ function App() {
             <div className="breadcrumb"><span>CampusConnect</span><b>/</b>{activeTitle[activeView]}</div>
           </div>
           <div className="topbar-actions">
-            <span className={`backend-pill backend-${backendStatus}`} role="status" aria-live="polite">
-              <span className="connection-dot" />{backendStatus === 'online' ? 'Backend connected' : backendStatus === 'offline' ? 'Backend unavailable' : 'Connecting'}
-            </span>
-            <span className={`dataset-status ${health?.corpus_documents ? 'dataset-ready' : ''}`}>{statusText}</span>
             <span className="retrieval-mode-label">{mode === 'tfidf' ? 'TF-IDF' : mode === 'semantic' ? 'Semantic' : 'Hybrid'} mode</span>
             <span className="demo-label">BEC KNOWLEDGE BASE</span>
-            {activeView === 'chat' && <button className="clear-button" disabled={loading} onClick={clearChat} title="Start a new chat" type="button"><Trash2 size={15} /><span>New chat</span></button>}
+            {activeView === 'chat' && <button className="clear-button" disabled={loading} onClick={startNewChat} title="Start a new chat" type="button"><Plus size={16} /><span>New Chat</span></button>}
           </div>
         </header>
 
